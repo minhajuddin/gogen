@@ -16,23 +16,28 @@ var (
 	opDir      string
 )
 
+func render(page string) {
+	log.Println("Rendering", page)
+	content, _ := ioutil.ReadFile(page)
+	basename := path.Base(page)
+	filename := basename[:strings.LastIndex(basename, ".")]
+	opFile, err := os.Create(path.Join(opDir, filename+".html"))
+	if err != nil {
+		log.Panic(err)
+	}
+	defer opFile.Close()
+	templates.ExecuteTemplate(opFile, "app.html", Page{Content: string(content)})
+}
+
 func main() {
+	//runtime.GOMAXPROCS(runtime.NumCPU())
 	log.Println("Generating site")
 
 	pages, _ := filepath.Glob(path.Join(currentDir, "pages", "*txt"))
 	os.Mkdir(opDir, 0700)
 
 	for _, page := range pages {
-		log.Println("Rendering", page)
-		content, _ := ioutil.ReadFile(page)
-		basename := path.Base(page)
-		filename := basename[:strings.LastIndex(basename, ".")]
-		opFile, err := os.Create(path.Join(opDir, filename+".html"))
-		if err != nil {
-			log.Panic(err)
-		}
-		defer opFile.Close()
-		templates.ExecuteTemplate(opFile, "app.html", Page{Content: string(content)})
+		render(page)
 	}
 
 	log.Println("DONE")
