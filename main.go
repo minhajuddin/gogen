@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/russross/blackfriday"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -19,6 +20,7 @@ var (
 func render(page string) {
 	log.Println("Rendering", page)
 	content, _ := ioutil.ReadFile(page)
+	content = blackfriday.MarkdownBasic(content)
 	basename := path.Base(page)
 	filename := basename[:strings.LastIndex(basename, ".")]
 	opFile, err := os.Create(path.Join(opDir, filename+".html"))
@@ -26,14 +28,15 @@ func render(page string) {
 		log.Panic(err)
 	}
 	defer opFile.Close()
-	templates.ExecuteTemplate(opFile, "app.html", Page{Content: string(content)})
+	templates.ExecuteTemplate(opFile, "app.html", Page{Content: template.HTML(content)})
 }
 
 func main() {
 	//runtime.GOMAXPROCS(runtime.NumCPU())
 	log.Println("Generating site")
 
-	pages, _ := filepath.Glob(path.Join(currentDir, "pages", "*txt"))
+	pages, _ := filepath.Glob(path.Join(currentDir, "pages", "*md"))
+	log.Println("Rendering", pages)
 	os.Mkdir(opDir, 0700)
 
 	for _, page := range pages {
@@ -44,7 +47,7 @@ func main() {
 }
 
 type Page struct {
-	Content string
+	Content template.HTML
 }
 
 func init() {
